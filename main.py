@@ -17,6 +17,7 @@ class Main():
         tmp = screen.crop(target["area"])
         hash = getImageHash(image=tmp)
         if hash == target["hash"]:
+            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))
             print(target["text"])
             return True
         return False
@@ -66,7 +67,8 @@ class Main():
 
 
     def start(self):
-
+        localtime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()) 
+        print(localtime)
         self.isRunning = True
         self.lastActionTime = int(time.time())
 
@@ -75,7 +77,7 @@ class Main():
                 t = int(time.time())
 
                 # 避免频繁操作
-                if t - self.lastActionTime < 2:
+                if self.lastActionTime > t:
                     continue
 
                 screen = readImageFromBytes(self.adb.getScreen())
@@ -83,14 +85,17 @@ class Main():
                 for target in self.config.targets:
                     if self.check(target,screen):
                         self.doAction(target)
-                        self.lastActionTime = t
+                        if "sleep" in target:
+                            self.lastActionTime = t + target["sleep"]
+                        else:
+                            self.lastActionTime = t + 2
                         break
 
-                #300秒未操作则随机点击一次
-                if t - self.lastActionTime > 300:
-                    print("长时间未操作，随机点击一次")
-                    self.adb.touchScreen((0,0,self.config.picSize[0],2))
-                    self.lastActionTime = t
+                # #300秒未操作则随机点击一次
+                # if t - self.lastActionTime > 300:
+                #     print("长时间未操作，随机点击一次")
+                #     self.adb.touchScreen((0,0,self.config.picSize[0],2))
+                #     self.lastActionTime = t
         except KeyboardInterrupt:
             print("退出")
 
